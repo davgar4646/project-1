@@ -1,0 +1,117 @@
+﻿
+-- 1. Users 18+ with full name and username
+SELECT FIRSTNAME || ' ' || LASTNAME AS FullName, USERNAME
+FROM USERBASE
+WHERE MONTHS_BETWEEN(SYSDATE, BIRTHDAY) / 12 >= 18;
+
+-- 2. Max and average length of USERNAME
+SELECT MAX(LENGTH(USERNAME)) AS MaxUsernameLength, 
+       ROUND(AVG(LENGTH(USERNAME)), 2) AS AvgUsernameLength
+FROM USERBASE;
+
+-- 3. Security questions starting with "What is" or "What was"
+SELECT QUESTION 
+FROM SECURITYQUESTION 
+WHERE QUESTION LIKE 'What is%' OR QUESTION LIKE 'What was%';
+
+-- 4. Lowest rating and review count per product
+SELECT PRODUCTCODE, MIN(RATING) AS LowestRating, COUNT(*) AS ReviewCount
+FROM REVIEWS
+GROUP BY PRODUCTCODE
+ORDER BY ReviewCount DESC;
+
+-- 5. PRODUCTCODEs at WISHLIST position 1 and their user counts
+SELECT PRODUCTCODE, COUNT(USERID) AS UsersAtPosition1
+FROM WISHLIST
+WHERE POSITION = 1
+GROUP BY PRODUCTCODE;
+
+-- 6. Total amount each user has spent
+SELECT USERID, SUM(PRICE) AS TotalSpent
+FROM ORDERS
+GROUP BY USERID;
+
+-- 7. Gross profits by purchase date
+SELECT PURCHASEDATE, SUM(PRICE) AS TotalProfit
+FROM ORDERS
+GROUP BY PURCHASEDATE
+ORDER BY TotalProfit DESC;
+
+-- 8. Top 5 most played games
+SELECT PRODUCTCODE, SUM(HOURSPLAYED) AS TotalHours
+FROM USERLIBRARY
+GROUP BY PRODUCTCODE
+ORDER BY TotalHours DESC
+FETCH FIRST 5 ROWS ONLY;
+
+-- 9. View: Count of infractions per user
+CREATE OR REPLACE VIEW UserInfractionCounts AS
+SELECT USERID, COUNT(*) AS InfractionCount
+FROM INFRACTIONS
+GROUP BY USERID
+ORDER BY InfractionCount DESC;
+
+-- 10. View: User's infraction counts by rule
+CREATE OR REPLACE VIEW UserRuleInfractionCounts AS
+SELECT USERID, RULENUM, COUNT(*) AS RuleInfractionCount
+FROM INFRACTIONS
+GROUP BY USERID, RULENUM
+ORDER BY USERID;
+
+-- 11. Penalty frequency by rule
+SELECT RULENUM, PENALTY, COUNT(*) AS PenaltyCount
+FROM INFRACTIONS
+GROUP BY RULENUM, PENALTY;
+
+-- 12. ❗ Tickets - Closed ticket response time stats
+-- Uncomment if TICKETS table exists
+-- SELECT ROUND(AVG(DATEUPDATED - DATESUBMITTED), 2) AS AvgTime,
+--        MAX(DATEUPDATED - DATESUBMITTED) AS MaxTime,
+--        MIN(DATEUPDATED - DATESUBMITTED) AS MinTime
+-- FROM TICKETS
+-- WHERE STATUS = 'CLOSED';
+
+-- 13. ❗ Tickets - New ticket counts by issue/date/email
+-- Uncomment if TICKETS table exists
+-- SELECT EMAIL, ISSUE, COUNT(*) AS IssueCount, DATESUBMITTED
+-- FROM TICKETS
+-- WHERE STATUS = 'NEW'
+-- GROUP BY EMAIL, ISSUE, DATESUBMITTED
+-- ORDER BY IssueCount DESC;
+
+-- 14. Users whose password contains their name
+SELECT USERID, USERNAME
+FROM USERBASE
+WHERE LOWER(PASSWORD) LIKE '%' || LOWER(FIRSTNAME) || '%'
+   OR LOWER(PASSWORD) LIKE '%' || LOWER(LASTNAME) || '%';
+
+-- 15. Average price per publisher
+SELECT PUBLISHER, ROUND(AVG(PRICE), 2) AS AvgPrice
+FROM PRODUCTLIST
+GROUP BY PUBLISHER
+ORDER BY PUBLISHER;
+
+-- 16. View: Products released over 5 years ago with 25% discount
+CREATE OR REPLACE VIEW DiscountedOldProducts AS
+SELECT PRODUCTNAME, PRICE * 0.75 AS DiscountedPrice
+FROM PRODUCTLIST
+WHERE RELEASEDATE < ADD_MONTHS(SYSDATE, -60);
+
+-- 17. Min and max price by genre
+SELECT GENRE, MAX(PRICE) AS MaxPrice, MIN(PRICE) AS MinPrice
+FROM PRODUCTLIST
+GROUP BY GENRE;
+
+-- 18. View: Chat messages from the last 7 days
+CREATE OR REPLACE VIEW RecentChatMessages AS
+SELECT *
+FROM CHATLOG
+WHERE DATESENT BETWEEN SYSDATE - 7 AND SYSDATE;
+
+-- 19. View: Recent penalties assigned in the last month
+CREATE OR REPLACE VIEW RecentPenalties AS
+SELECT USERID, DATEASSIGNED, PENALTY
+FROM INFRACTIONS
+WHERE PENALTY IS NOT NULL
+  AND DATEASSIGNED >= ADD_MONTHS(SYSDATE, -1);
+
